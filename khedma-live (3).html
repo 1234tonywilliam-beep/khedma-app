@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>برنامج الخدمة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --navy:#0F2343; --navy-2:#1B3A63;
+  --gold:#B8933D; --gold-light:#E4C878;
+  --ink:#20242E; --ink-soft:#565B68;
+  --cream:#EDE7D6; --line:#D8CFAE; --card:#FFFEFA;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  box-sizing:border-box;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{height:100%;}
+body{
+  height:100%; font-family:'Tajawal',sans-serif; background:#0A1626; color:var(--ink);
+  display:flex; align-items:center; justify-content:center; padding:20px 10px;
+}
+.phone{
+  width:100%; max-width:400px; height:min(840px,92vh);
+  background:var(--cream); border-radius:34px; border:8px solid #241E17;
+  box-shadow:0 20px 50px rgba(0,0,0,.35); overflow:hidden; display:flex; flex-direction:column;
+}
+.topbar{ background:var(--navy); color:#F4EDD8; padding:16px 18px; flex-shrink:0; }
+.topbar h1{ font-family:'Aref Ruqaa', serif; font-size:20px; }
+.screen{ flex:1; overflow-y:auto; padding:20px 18px; display:none; }
+.screen.active{ display:flex; flex-direction:column; }
+label{ font-size:13px; color:var(--ink-soft); margin:10px 0 4px; display:block; }
+input, select{
+  width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--line);
+  background:var(--card); font-family:'Tajawal'; font-size:14px; color:var(--ink);
+}
+.btn{
+  margin-top:18px; background:var(--navy); color:var(--gold-light); border:none; padding:13px;
+  border-radius:10px; font-family:'Tajawal'; font-weight:700; font-size:15px; cursor:pointer;
+}
+.btn.secondary{ background:transparent; color:var(--navy); border:1px solid var(--navy); margin-top:8px; }
+.err{ color:#A32D2D; font-size:12.5px; margin-top:10px; display:none; }
+.switch-link{ text-align:center; margin-top:16px; font-size:13px; color:var(--navy); text-decoration:underline; cursor:pointer; }
+.form-title{ font-family:'Aref Ruqaa'; font-size:22px; color:var(--navy); margin-bottom:4px; }
+.form-sub{ font-size:12.5px; color:var(--ink-soft); margin-bottom:8px; }
+.saint-card{ border-radius:14px; overflow:hidden; margin-bottom:14px; border:2px solid var(--gold); }
+.card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:12px; }
+.hero-name{ font-family:'Aref Ruqaa'; font-size:24px; color:var(--navy); }
+.hero-sub{ font-size:13.5px; color:var(--ink-soft); margin-top:6px; line-height:1.9; }
+.hero-sub b{ color:var(--ink); }
+.loader{ text-align:center; padding:40px 0; color:var(--ink-soft); font-size:13px; }
+.navbar{ display:flex; border-top:2px solid var(--gold); background:var(--navy); flex-shrink:0; }
+.navbar button{ flex:1; background:none; border:none; color:#CDB27A; padding:10px 4px; font-family:'Tajawal'; font-size:11px; cursor:pointer; }
+.navbar button.active{ color:var(--gold-light); font-weight:700; }
+.member{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+.member b{ font-size:14px; }
+.weeks{ display:flex; gap:6px; margin-top:6px; }
+.week{ width:26px; height:26px; border-radius:6px; border:1.5px solid var(--line); font-size:11px; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); cursor:pointer; background:var(--card); }
+.week.done{ background:var(--navy); border-color:var(--navy); color:var(--gold-light); }
+.fab{ position:fixed; bottom:80px; left:24px; width:50px; height:50px; border-radius:50%; background:var(--navy); color:var(--gold-light); border:2px solid var(--gold); font-size:24px; cursor:pointer; }
+.modal-back{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:10; }
+.modal-back.active{ display:flex; }
+.modal{ background:var(--cream); border-radius:16px; padding:18px; width:85%; max-width:340px; max-height:80vh; overflow-y:auto; }
+.priests{ display:flex; gap:12px; margin-top:12px; }
+.priest{ display:flex; flex-direction:column; align-items:center; gap:5px; flex:1; }
+.avatar{ width:48px; height:48px; border-radius:50%; background:radial-gradient(circle at 35% 30%, var(--gold-light), var(--navy)); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Aref Ruqaa'; font-size:17px; border:2px solid var(--gold); }
+.priest span{ font-size:10.5px; color:var(--ink-soft); }
+.big-btn{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 14px; text-align:center; margin-bottom:12px; cursor:pointer; }
+.big-btn b{ font-family:'Aref Ruqaa'; font-size:17px; color:var(--navy); display:block; }
+.big-btn span{ font-size:11.5px; color:var(--ink-soft); }
+.week-card{ background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:9px; overflow:hidden; }
+.week-head{ padding:11px 13px; display:flex; justify-content:space-between; font-size:13.5px; font-weight:700; color:var(--navy); cursor:pointer; }
+.week-body{ padding:0 13px 12px; font-size:12px; color:var(--ink-soft); line-height:1.9; display:none; }
+.counter-row{ display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); }
+.counter-row:last-child{ border-bottom:none; }
+.counter-controls{ display:flex; align-items:center; gap:10px; }
+.counter-controls button{ width:26px; height:26px; border-radius:50%; border:1px solid var(--navy); background:var(--card); color:var(--navy); font-size:15px; cursor:pointer; }
+.notice{ background:#FBF3DD; border-right:4px solid var(--gold); border-radius:8px; padding:9px 11px; font-size:12px; margin-bottom:8px; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="topbar"><h1>برنامج الخدمة — كنيسة الشهيد مارمرقس</h1></div>
+
+  <!-- شاشة التحميل -->
+  <div class="screen active" data-screen="loading">
+    <div class="loader">جاري التحميل...</div>
+  </div>
+
+  <!-- تسجيل دخول -->
+  <div class="screen" data-screen="login">
+    <div class="form-title">تسجيل الدخول</div>
+    <div class="form-sub">ادخل برقم تليفونك وكلمة السر</div>
+    <label>رقم التليفون</label>
+    <input id="login-phone" type="tel" placeholder="01xxxxxxxxx">
+    <label>كلمة السر</label>
+    <input id="login-pass" type="password">
+    <div class="err" id="login-err"></div>
+    <button class="btn" onclick="doLogin()">دخول</button>
+    <div class="switch-link" onclick="go('register')">مش مسجل؟ سجل حساب جديد</div>
+  </div>
+
+  <!-- تسجيل جديد -->
+  <div class="screen" data-screen="register">
+    <div class="form-title">تسجيل حساب جديد</div>
+    <label>الاسم بالكامل</label>
+    <input id="reg-name" type="text">
+    <label>اسم الأسرة اللي بتخدم فيها</label>
+    <input id="reg-family" type="text">
+    <label>اسم أمين الأسرة</label>
+    <input id="reg-ameen" type="text">
+    <label>رقم التليفون</label>
+    <input id="reg-phone" type="tel" placeholder="01xxxxxxxxx">
+    <label>كلمة السر</label>
+    <input id="reg-pass" type="password">
+    <div class="err" id="reg-err"></div>
+    <button class="btn" onclick="doRegister()">إنشاء الحساب</button>
+    <div class="switch-link" onclick="go('login')">عندك حساب؟ سجل دخول</div>
+  </div>
+
+  <!-- الرئيسية -->
+  <div class="screen" data-screen="home">
+    <div class="saint-card">
+      <svg viewBox="0 0 200 110" width="100%" height="110">
+        <rect width="200" height="110" fill="var(--navy)"/>
+        <circle cx="100" cy="34" r="22" fill="none" stroke="var(--gold-light)" stroke-width="2"/>
+        <circle cx="100" cy="34" r="18" fill="var(--gold)" opacity="0.9"/>
+        <path d="M80 112 C80 78 86 62 100 62 C114 62 120 78 120 112 Z" fill="var(--navy-2)" stroke="var(--gold)" stroke-width="1.5"/>
+        <circle cx="100" cy="46" r="13" fill="#F1E3C0"/>
+        <text x="100" y="104" text-anchor="middle" font-family="Aref Ruqaa" font-size="9" fill="var(--gold-light)">القديس مارمرقس الرسول</text>
+      </svg>
+    </div>
+    <div class="card">
+      <div class="hero-name" id="home-name">—</div>
+      <div class="hero-sub">
+        <b>الأسرة:</b> <span id="home-family">—</span><br>
+        <b>أمين الأسرة:</b> <span id="home-ameen">—</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="hero-sub"><b>اجتماع الخدام:</b> كل جمعة — 7:00 مساءً</div>
+      <div class="hero-sub"><b>القداس الشهري:</b> أول أحد — 8:00 صباحاً</div>
+      <div class="priests">
+        <div class="priest"><div class="avatar">ق</div><span>القمص يوأنس</span></div>
+        <div class="priest"><div class="avatar">ب</div><span>أبونا بولس</span></div>
+        <div class="priest"><div class="avatar">م</div><span>أبونا مرقس</span></div>
+      </div>
+    </div>
+    <button class="btn secondary" onclick="doLogout()">تسجيل الخروج</button>
+  </div>
+
+  <!-- الافتقاد -->
+  <div class="screen" data-screen="eftekad" style="position:relative;">
+    <div class="form-title">الافتقاد</div>
+    <div class="form-sub" id="eftekad-sub">مخدوميك</div>
+    <div id="members-list"></div>
+    <div style="height:60px"></div>
+  </div>
+
+  <!-- الحضور -->
+  <div class="screen" data-screen="hodor">
+    <div class="form-title">تسجيل الحضور</div>
+    <div class="big-btn" onclick="markAttendance('اجتماع الخدام')">
+      <b>اجتماع الخدام</b><span>دوس لتسجيل حضورك النهارده</span>
+    </div>
+    <div class="big-btn" onclick="markAttendance('مدارس الأحد')">
+      <b>مدارس الأحد</b><span>دوس لتسجيل حضورك النهارده</span>
+    </div>
+    <div id="hodor-msg" class="form-sub"></div>
+  </div>
+
+  <!-- التحضير -->
+  <div class="screen" data-screen="tahdir">
+    <div class="form-title">المنهج الشهري</div>
+    <div id="tahdir-list"><div class="loader">جاري التحميل...</div></div>
+  </div>
+
+  <!-- المتابعة -->
+  <div class="screen" data-screen="motabaa">
+    <div class="form-title">المتابعة الروحية</div>
+    <div class="card" id="motabaa-card"><div class="loader">جاري التحميل...</div></div>
+    <div class="form-title" style="font-size:16px; margin-top:16px">التنبيهات</div>
+    <div id="notices-list"></div>
+  </div>
+
+  <div class="navbar" id="navbar" style="display:none">
+    <button class="nav-btn active" data-nav="home" onclick="switchTab('home')">🏠</button>
+    <button class="nav-btn" data-nav="eftekad" onclick="switchTab('eftekad')">✝️</button>
+    <button class="nav-btn" data-nav="hodor" onclick="switchTab('hodor')">🗓️</button>
+    <button class="nav-btn" data-nav="tahdir" onclick="switchTab('tahdir')">📖</button>
+    <button class="nav-btn" data-nav="motabaa" onclick="switchTab('motabaa')">🔔</button>
+  </div>
+</div>
+
+<button class="fab" id="fab-add" style="display:none" onclick="openAddMember()">+</button>
+
+<div class="modal-back" id="modal-back">
+  <div class="modal">
+    <div class="form-title">إضافة مخدوم</div>
+    <label>الاسم</label>
+    <input id="m-name" type="text">
+    <label>العنوان</label>
+    <input id="m-address" type="text">
+    <label>تاريخ الميلاد</label>
+    <input id="m-birth" type="date">
+    <label>رقم التواصل</label>
+    <input id="m-phone" type="tel">
+    <div class="err" id="m-err"></div>
+    <button class="btn" onclick="saveMember()">حفظ</button>
+    <button class="btn secondary" onclick="closeAddMember()">إلغاء</button>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAZeqphx-VMZyp7qvuZ1Vcl--jor9UTwBQ",
+  authDomain: "stmark-5521a.firebaseapp.com",
+  projectId: "stmark-5521a",
+  storageBucket: "stmark-5521a.firebasestorage.app",
+  messagingSenderId: "543714814352",
+  appId: "1:543714814352:web:b219fcb5b4a52489912b15"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+function go(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.dataset.screen===name));
+}
+function phoneToEmail(phone){
+  return phone.replace(/\D/g,'') + '@khedma-app.local';
+}
+function showErr(id, msg){
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+}
+function friendlyError(code){
+  const map = {
+    'auth/email-already-in-use':'الرقم ده مسجل قبل كده، جرب تسجيل الدخول',
+    'auth/invalid-email':'رقم التليفون غير صحيح',
+    'auth/weak-password':'كلمة السر لازم تكون 6 أحرف على الأقل',
+    'auth/user-not-found':'الرقم ده مش مسجل',
+    'auth/wrong-password':'كلمة السر غلط',
+    'auth/invalid-credential':'رقم التليفون أو كلمة السر غلط'
+  };
+  return map[code] || 'حصل خطأ، حاول تاني';
+}
+function doRegister(){
+  const name = document.getElementById('reg-name').value.trim();
+  const family = document.getElementById('reg-family').value.trim();
+  const ameen = document.getElementById('reg-ameen').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  document.getElementById('reg-err').style.display='none';
+  if(!name || !family || !ameen || !phone || !pass){
+    showErr('reg-err','من فضلك املا كل الخانات'); return;
+  }
+  auth.createUserWithEmailAndPassword(phoneToEmail(phone), pass)
+    .then(cred => db.collection('users').doc(cred.user.uid).set({
+      name, family_name: family, ameen_name: ameen, phone,
+      role: 'khadem', created_at: new Date().toISOString()
+    }))
+    .catch(e => showErr('reg-err', friendlyError(e.code)));
+}
+function doLogin(){
+  const phone = document.getElementById('login-phone').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  document.getElementById('login-err').style.display='none';
+  if(!phone || !pass){ showErr('login-err','من فضلك اكتب الرقم وكلمة السر'); return; }
+  auth.signInWithEmailAndPassword(phoneToEmail(phone), pass)
+    .catch(e => showErr('login-err', friendlyError(e.code)));
+}
+function doLogout(){ auth.signOut(); }
+
+function switchTab(name){
+  go(name);
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.nav===name));
+  document.getElementById('fab-add').style.display = (name==='eftekad') ? 'flex' : 'none';
+  if(name==='eftekad') loadMembers();
+  if(name==='tahdir') loadCurriculum();
+  if(name==='motabaa') loadSpiritual();
+}
+
+/* ---- الحضور ---- */
+function markAttendance(type){
+  const uid = auth.currentUser.uid;
+  const today = new Date().toISOString().slice(0,10);
+  db.collection('attendance').add({ user_id: uid, type, date: today, timestamp: new Date().toISOString() })
+    .then(()=> document.getElementById('hodor-msg').textContent = '✓ اتسجل حضورك في "'+type+'" النهارده')
+    .catch(e => document.getElementById('hodor-msg').textContent = 'حصل خطأ: '+(e.message||e.code));
+}
+
+/* ---- التحضير ---- */
+function loadCurriculum(){
+  const el = document.getElementById('tahdir-list');
+  el.innerHTML = '<div class="loader">جاري التحميل...</div>';
+  db.collection('curriculum').where('month','==',currentMonth).get()
+    .then(snap=>{
+      if(snap.empty){ el.innerHTML = '<div class="form-sub">أمين الأسرة لسه ما ضافش منهج الشهر ده.</div>'; return; }
+      el.innerHTML = '';
+      const names = ['الجمعة الأولى','الجمعة الثانية','الجمعة الثالثة','الجمعة الرابعة'];
+      const docs = snap.docs.sort((a,b)=>(a.data().week||0)-(b.data().week||0));
+      docs.forEach(doc=>{
+        const d = doc.data();
+        const card = document.createElement('div');
+        card.className = 'week-card';
+        card.innerHTML = `<div class="week-head" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display==='block'?'none':'block'">${names[(d.week||1)-1]||'جمعة'} <span>▾</span></div>
+        <div class="week-body"><b>العنوان:</b> ${d.title||'—'}<br><b>الآية:</b> ${d.verse||'—'}<br><b>الهدف:</b> ${d.objective||'—'}<br><b>المرجع:</b> ${d.reference||'—'}</div>`;
+        el.appendChild(card);
+      });
+    })
+    .catch(e=>{ el.innerHTML = '<div class="err" style="display:block">تعذر تحميل المنهج: '+(e.message||e.code)+'</div>'; });
+}
+
+/* ---- المتابعة الروحية ---- */
+const spiritualFields = [['confession','اعتراف'],['communion','تناول'],['mass','قداس'],['tasbeha','تسبحة']];
+function loadSpiritual(){
+  const uid = auth.currentUser.uid;
+  const card = document.getElementById('motabaa-card');
+  const docId = uid + '_' + currentMonth;
+  db.collection('spiritual_log').doc(docId).get().then(doc=>{
+    const d = doc.data() || {};
+    card.innerHTML = spiritualFields.map(([key,label])=>`
+      <div class="counter-row"><span>${label}</span>
+        <div class="counter-controls">
+          <button onclick="changeSpiritual('${key}',-1)">−</button>
+          <b id="sp-${key}">${d[key]||0}</b>
+          <button onclick="changeSpiritual('${key}',1)">+</button>
+        </div>
+      </div>`).join('');
+  }).catch(e=>{ card.innerHTML = '<div class="err" style="display:block">تعذر التحميل: '+(e.message||e.code)+'</div>'; });
+
+  const notices = document.getElementById('notices-list');
+  db.collection('notices').orderBy('created_at','desc').limit(5).get().then(snap=>{
+    if(snap.empty){ notices.innerHTML = '<div class="form-sub">مفيش تنبيهات دلوقتي.</div>'; return; }
+    notices.innerHTML = '';
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const n = document.createElement('div');
+      n.className = 'notice'; n.textContent = d.text || '';
+      notices.appendChild(n);
+    });
+  }).catch(()=>{ notices.innerHTML = ''; });
+}
+function changeSpiritual(key, delta){
+  const uid = auth.currentUser.uid;
+  const docId = uid + '_' + currentMonth;
+  const el = document.getElementById('sp-'+key);
+  const newVal = Math.max(0, parseInt(el.textContent) + delta);
+  el.textContent = newVal;
+  db.collection('spiritual_log').doc(docId).set({[key]: newVal, user_id: uid, month: currentMonth}, {merge:true});
+}
+function openAddMember(){
+  document.getElementById('modal-back').classList.add('active');
+  document.getElementById('m-err').style.display='none';
+}
+function closeAddMember(){ document.getElementById('modal-back').classList.remove('active'); }
+
+const currentMonth = new Date().toISOString().slice(0,7);
+function saveMember(){
+  const name = document.getElementById('m-name').value.trim();
+  const address = document.getElementById('m-address').value.trim();
+  const birth = document.getElementById('m-birth').value;
+  const phone = document.getElementById('m-phone').value.trim();
+  if(!name){ showErr('m-err','اكتب اسم المخدوم على الأقل'); return; }
+  const uid = auth.currentUser.uid;
+  db.collection('members').add({
+    name, address, birth_date: birth, phone,
+    added_by: uid, month: currentMonth, weeks:[false,false,false,false],
+    created_at: new Date().toISOString()
+  }).then(()=>{ closeAddMember(); clearMemberForm(); loadMembers(); })
+    .catch(e => showErr('m-err', e.message || 'حصل خطأ، حاول تاني'));
+}
+function clearMemberForm(){
+  ['m-name','m-address','m-birth','m-phone'].forEach(id=>document.getElementById(id).value='');
+}
+function loadMembers(){
+  const uid = auth.currentUser.uid;
+  const list = document.getElementById('members-list');
+  list.innerHTML = '<div class="loader">جاري التحميل...</div>';
+  db.collection('members').where('added_by','==',uid).where('month','==',currentMonth).get()
+    .then(snap => {
+      if(snap.empty){ list.innerHTML = '<div class="form-sub">لسه مفيش مخدومين مضافين الشهر ده. دوس + تحت لإضافة أول واحد.</div>'; return; }
+      list.innerHTML = '';
+      snap.forEach(doc => {
+        const d = doc.data();
+        const weeks = d.weeks || [false,false,false,false];
+        const el = document.createElement('div');
+        el.className = 'member';
+        el.innerHTML = `<b>${d.name}</b><div class="weeks">${weeks.map((w,i)=>
+          `<div class="week ${w?'done':''}" onclick="toggleWeek('${doc.id}',${i})">${i+1}</div>`).join('')}</div>`;
+        list.appendChild(el);
+      });
+    })
+    .catch(e => { list.innerHTML = '<div class="err" style="display:block">تعذر تحميل المخدومين: '+(e.message||e.code)+'</div>'; });
+}
+function toggleWeek(id, idx){
+  db.collection('members').doc(id).get().then(doc=>{
+    const weeks = doc.data().weeks || [false,false,false,false];
+    weeks[idx] = !weeks[idx];
+    db.collection('members').doc(id).update({weeks}).then(loadMembers);
+  });
+}
+
+let resolved = false;
+auth.onAuthStateChanged(user => {
+  resolved = true;
+  if(user){
+    db.collection('users').doc(user.uid).get().then(doc => {
+      const d = doc.data() || {};
+      document.getElementById('home-name').textContent = d.name || '(بيانات ناقصة)';
+      document.getElementById('home-family').textContent = d.family_name || '—';
+      document.getElementById('home-ameen').textContent = d.ameen_name || '—';
+      document.getElementById('navbar').style.display = 'flex';
+      switchTab('home');
+    }).catch(e => {
+      go('login');
+      showErr('login-err', 'دخلت بنجاح بس حصلت مشكلة في جلب بياناتك: ' + (e.message || e.code || 'خطأ غير معروف'));
+    });
+  } else {
+    document.getElementById('navbar').style.display = 'none';
+    document.getElementById('fab-add').style.display = 'none';
+    go('login');
+  }
+});
+setTimeout(() => {
+  if(!resolved){
+    document.querySelector('[data-screen="loading"]').innerHTML =
+      '<div class="loader">تعذر الاتصال بالإنترنت أو الاتصال بطيء جداً.<br><br>' +
+      '<button class="btn" onclick="location.reload()">حاول تاني</button></div>';
+  }
+}, 6000);
+</script>
+</body>
+</html>

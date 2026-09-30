@@ -191,11 +191,14 @@ auth.onAuthStateChanged(user => {
   if(user){
     db.collection('users').doc(user.uid).get().then(doc => {
       const d = doc.data() || {};
-      document.getElementById('home-name').textContent = d.name || '';
-      document.getElementById('home-family').textContent = d.family_name || '';
-      document.getElementById('home-ameen').textContent = d.ameen_name || '';
+      document.getElementById('home-name').textContent = d.name || '(بيانات ناقصة)';
+      document.getElementById('home-family').textContent = d.family_name || '—';
+      document.getElementById('home-ameen').textContent = d.ameen_name || '—';
       go('home');
-    }).catch(() => go('login'));
+    }).catch(e => {
+      go('login');
+      showErr('login-err', 'دخلت بنجاح بس حصلت مشكلة في جلب بياناتك: ' + (e.message || e.code || 'خطأ غير معروف'));
+    });
   } else {
     go('login');
   }
